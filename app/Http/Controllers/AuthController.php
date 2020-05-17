@@ -331,7 +331,7 @@ class AuthController extends Controller
                 $videoSnippet->setChannelId($channelId);
                 //$videoSnippet->setChannelTitle($channelTitle);
                 $videoSnippet->setDescription($description);
-                $videoSnippet->setPublishedAt($publishAt);
+                //$videoSnippet->setPublishedAt($publishAt);
 
                 if ($thumbnailUrl) {
                     $thumbnail->setUrl($thumbnailUrl);
