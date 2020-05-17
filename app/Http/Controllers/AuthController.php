@@ -259,7 +259,7 @@ class AuthController extends Controller
 
         if ($this->checkGoogleAccess($providerName, $uid)) {
             try {
-                dd($this->row);
+                //dd($this->row);
                 return response()->json($this->row->access_token);
             } catch (\Exception $e) {
                 // TODO: show Error
@@ -315,11 +315,11 @@ class AuthController extends Controller
 
                 // general field
                 $videoUrl = $request->videoPath ?? 'C:\Users\savvy\Pictures\gif\1.mp4';
-                $title = $request->title ?? 'title';
+                $title = $request->title ?? 'عنوان ویدیو';
                 $categoryId = $request->categoryId ?? '';
                 $channelId = $request->channelId ?? '';
                 //$channelTitle = $request->channelTitle ?? '';
-                $description = $request->description ?? '';
+                $description = $request->description ?? 'توضیحات ویدیو - ارسال شده توسط ساوی مدیا';
                 $now   = new \DateTime();
                 $clone = $now;        //this doesnot clone so:
                 $clone->modify( '1 day' );
@@ -327,8 +327,8 @@ class AuthController extends Controller
                 $publishAt = $request->publishAt ?? $clone->format('Y-m-d\TH:i:sO');
                 $thumbnailUrl = $request->thumbnailUrl ?? 'https://static.farakav.com/v3content/assets/img/identity/varzesh3-logo-wt.png';
 
-                $videoSnippet->setCategoryId($categoryId);
-                $videoSnippet->setChannelId($channelId);
+                //$videoSnippet->setCategoryId($categoryId);
+                //$videoSnippet->setChannelId($channelId);
                 //$videoSnippet->setChannelTitle($channelTitle);
                 $videoSnippet->setDescription($description);
                 //$videoSnippet->setPublishedAt($publishAt);
@@ -339,7 +339,7 @@ class AuthController extends Controller
                     $videoSnippet->setThumbnails($thumbnailDetails);
                 }
                 $videoSnippet->setTitle($title);
-                $video->setSnippet($videoSnippet);
+                //$video->setSnippet($videoSnippet);
 
                 $data = array(
                     'data' => file_get_contents($videoUrl),
@@ -347,7 +347,7 @@ class AuthController extends Controller
                     'uploadType' => 'multipart'
                 );
                 $response = $service->videos->insert(
-                    'contentDetails',
+                    'id',
                     $video,
                     $data
                 );
