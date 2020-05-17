@@ -1,0 +1,31 @@
+{
+  "web": {
+    "client_id": "95755817883-qibqav3uigops9vpuiivfkhnarctc484.apps.googleusercontent.com",
+    "project_id": "alphacast",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_secret": "YE76BV3EphdFHbu1VTjZAED2",
+    "redirect_uris": [
+      "https://media.savy.ir",
+      "http://localhost:7000/",
+      "http://localhost:7000/login",
+      "http://localhost:5100/google/auth",
+      "http://localhost:5100/login",
+      "http://localhost:5100/login/youtube",
+      "http://localhost:5100/login/blogger",
+      "http://localhost:5100/login/googleplus",
+      "http://localhost:8000/google/back/youtube",
+      "http://localhost:8000/google/back/blogger",
+      "http://localhost:8000/google/back/googleplus"
+    ],
+    "javascript_origins": [
+      "https://media.savy.ir",
+      "https://api.savy.ir",
+      "https://savy.ir",
+      "http://localhost:7000",
+      "http://localhost:5100",
+      "http://localhost:8000"
+    ]
+  }
+}
