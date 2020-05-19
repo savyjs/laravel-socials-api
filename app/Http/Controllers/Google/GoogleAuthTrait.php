@@ -1,0 +1,179 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: savvy
+ * Date: 19/05/2020
+ * Time: 09:47 AM
+ */
+
+namespace App\Http\Controllers\Google;
+
+use App\Token;
+use Illuminate\Http\Request;
+use Google_Client;
+use Google_Service_Oauth2;
+use Google_Service_YouTube;
+use Google_Service_YouTube_Video;
+use Google_Service_YouTube_ThumbnailDetails;
+use Google_Service_YouTube_Thumbnail;
+use Google_Service_YouTube_VideoSnippet;
+use function Safe\ssdeep_fuzzy_hash;
+
+
+trait GoogleAuthTrait
+{
+    public function __construct()
+    {
+        $this->user = [];
+        if (auth()->user()) {
+            $this->user = auth()->user();
+        }
+        $this->API_KEY = \Config::get('provider.GOOGLE_API_KEY');
+
+        // get client_id + API_KEY + client_secret
+
+        $client = new Google_Client();
+        $client->setAuthConfig('../google.json');
+        $client->setAccessType('offline');
+        $client->setDeveloperKey($this->API_KEY);
+        $this->client = $client;
+
+    }
+
+
+    function setGoogleScopeAndRedirect($providerName)
+    {
+        $scopes = \Config::get('provider.' . $providerName);
+        $this->client->setScopes($scopes);
+        $this->client->setRedirectUri(\Config::get('app.url') . '/google/back/' . $providerName);
+    }
+
+    public function googleAuthLink($uid, $user_id, $providerName)
+    {
+        $user_id = intval($user_id); // platform user id
+        if (!$user_id) die('پلتفرم نا مشخص.');
+        $providers = Token::$PROVIDERS;
+        if (!in_array($providerName, $providers)) {
+            die('شبکه ی اجتماعی هدف نا مشخص است.');
+        }
+
+
+        // check if uid+provide exists in db - if not create it first
+
+        $secret = ssdeep_fuzzy_hash(time() . $user_id . $uid);
+        $user = [
+            'uid' => $uid,
+            'user_id' => $user_id,
+            'secret' => $secret,
+            'provider' => $providerName,
+        ];
+        $row = Token::firstOrCreate($user);
+        $link = route('googleAuth', [$providerName, $secret]);
+
+        // Request authorization from the user.
+        return $link;
+
+    }
+
+
+    function refreshOneRow($uid, $providerName)
+    {
+
+        $row = Token::whereNotNull('refresh_token')->whereUidAndProvider($uid, $providerName)->first();
+        if (!$uid || !$row || $row->uid != $uid) {
+            return $this->error('توکنی موجود نیست.');
+        }
+
+        if (!$row->access_token) {
+            $row->delete();
+            return $this->error('توکن خالی است.');
+        }
+        // dd($uids);
+        $providers = Token::$PROVIDERS;
+        $time = time();
+
+        $this->setGoogleScopeAndRedirect($providerName);
+
+        // Exchange authorization code for an access token.
+        try {
+            // exchange code for access_token and refresh token
+            $refresh_token = $row->refresh_token;
+            $exchanged = $this->client->fetchAccessTokenWithRefreshToken($refresh_token);
+            $access_token = $exchanged['access_token'];
+            $refresh_token = $exchanged['refresh_token'];
+            $expire = $exchanged['expires_in'];
+
+            $row->access_token = $access_token;
+            $row->refresh_token = $refresh_token;
+            $row->end_time = $time + $expire;
+
+
+            // update access_token + refresh_token in uid+provider row
+            $row->save();
+
+        } catch (\Exception $e) {
+            // set log that can't to refresh token
+            return response($e->getMessage());
+        }
+
+    }
+
+    function checkGoogleAccess($providerName, $uid, $user_id = null)
+    {
+        $user = [
+            'uid' => $uid,
+            'provider' => $providerName,
+        ];
+        if ($user_id) {
+            $user['user_id'] = $user_id;
+        }
+
+        $providers = Token::$PROVIDERS;
+        if (!in_array($providerName, $providers)) {
+            $this->error('مشکلی در پیدا رخ داد');
+            return false;
+        }
+        $row = Token::where($user)->first();
+        // dd($row,$user);
+
+        // dd($row->access_token);
+        if (!$uid || !$row || $row->uid != $uid) {
+            $this->error('توکنی موجود نیست');
+            return false;
+        }
+        if (!$row->access_token) {
+            $this->error('توکن خالی است');
+            $row->delete();
+            return false;
+        }
+        if ($row->end_time < time()) {
+            $this->refreshOneRow($row->uid, $row->provider);
+        }
+
+        $this->setGoogleScopeAndRedirect($providerName);
+
+        try {
+            $this->client->setAccessToken($row->access_token);
+            $oauth2 = new Google_Service_Oauth2($this->client);
+            $userInfo = $oauth2->userinfo->get();
+            $userInfo->refresh = true;
+            $userInfo->uid = $uid;
+            $userInfo->auth_row_id = $row->id;
+            $this->row = $row;
+            $this->userInfo = $userInfo;
+            return true;
+        } catch (\Exception $e) {
+            // TODO: add error handler
+            $row->delete();
+            return response($e->getMessage());
+        }
+    }
+
+
+    public function error($msg, $status = 400)
+    {
+        throw new \Exception($msg ?? 'مشکلی رخ داد');
+    }
+
+
+}

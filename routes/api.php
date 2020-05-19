@@ -14,62 +14,28 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
-});
 
-// proxy for all sites 
-Route::post('/callApi/request', 'General@callExternalApi');
-
-// proxy for google 
-Route::post('/google/request', 'ApiController@googleApi');
-
-// youtube 
-Route::post('/youtube/request',   'ApiController@youtubeApi');
+// auth and token requests
 
 
-// telegram 
-Route::post('/telegram/request', function (Request $request) {
-    // proxy request
-});
+Route::middleware('auth:api')->namespace('Google')->group(function () {
+    // google token
+    Route::get('/google/check-token/{provider}/{uid}', 'AuthController@checkGoogleAccess');
+    Route::get('/google/get-token/{provider}', 'AuthController@getGoogleAccessToken');
+    Route::get('/google/get-profile/{provider}', 'AuthController@getGoogleProfile');
+    Route::get('/google/get-profile-or-auth-link/{provider}', 'AuthController@getGoogleProfileOrAuthLink');
+    Route::get('/google/auto-refresh', 'AuthController@googleRefreshAllTokens');
 
-
-// twitter 
-Route::post('/twitter/request', function (Request $request) {
-    // proxy request
+    // youtube routes
+    Route::get('/youtube/get-channels-list/{uid}', 'Google\YoutubeController@youtubeGetChannels');
+    Route::get('/youtube/insert-video/{uid}', 'Google\YoutubeController@youtubeInsertVideo');
 });
 
 
-// facebook 
-Route::post('/facebook/request', function (Request $request) {
-    // proxy request
+
+Route::post('login', 'PassportController@login');
+Route::post('register', 'PassportController@register');
+
+Route::middleware('auth:api')->group(function () {
+    Route::get('user', 'PassportController@details');
 });
-
-
-// linkedin
-Route::post('/linkedin/request', function (Request $request) {
-    // proxy request
-});
-
-
-// aparat
-Route::post('/aparat/request', function (Request $request) {
-    // proxy request
-});
-
-
-// soundcloud
-Route::post('/soundcloud/request', function (Request $request) {
-    // proxy request
-});
-
-// instagram
-Route::post('/instagram/request', function (Request $request) {
-    // proxy request
-});
-
-// pinterest
-Route::post('/pinterest/request', function (Request $request) {
-    // proxy request
-});
-
