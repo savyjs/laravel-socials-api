@@ -20,17 +20,17 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:api')->namespace('Google')->group(function () {
     // google token
-    Route::get('/google/check-token/{provider}/{uid}', 'AuthController@checkGoogleAccess');
-    Route::get('/google/get-token/{provider}', 'AuthController@getGoogleAccessToken');
-    Route::get('/google/get-profile/{provider}', 'AuthController@getGoogleProfile');
-    Route::get('/google/get-profile-or-auth-link/{provider}', 'AuthController@getGoogleProfileOrAuthLink');
-    Route::get('/google/auto-refresh', 'AuthController@googleRefreshAllTokens');
+    Route::any('/google/revoke-token/{provider}', 'AuthController@revokeGoogleAccess');
+    Route::any('/google/check-token/{provider}/{uid}', 'AuthController@checkGoogleAccess');
+    Route::any('/google/get-token/{provider}', 'AuthController@getGoogleAccessToken');
+    Route::any('/google/get-profile/{provider}', 'AuthController@getGoogleProfile');
+    Route::any('/google/get-profile-or-auth-link/{provider}', 'AuthController@getGoogleProfileOrAuthLink');
+    Route::any('/google/auto-refresh', 'AuthController@googleRefreshAllTokens');
 
     // youtube routes
-    Route::get('/youtube/get-channels-list/{uid}', 'Google\YoutubeController@youtubeGetChannels');
-    Route::get('/youtube/insert-video/{uid}', 'Google\YoutubeController@youtubeInsertVideo');
+    Route::any('/youtube/get-channels-list/{uid}', 'Google\YoutubeController@youtubeGetChannels');
+    Route::any('/youtube/insert-video/{uid}', 'Google\YoutubeController@youtubeInsertVideo');
 });
-
 
 
 Route::post('login', 'PassportController@login');

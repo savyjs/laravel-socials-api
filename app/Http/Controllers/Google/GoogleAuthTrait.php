@@ -41,7 +41,6 @@ trait GoogleAuthTrait
 
     }
 
-
     function setGoogleScopeAndRedirect($providerName)
     {
         $scopes = \Config::get('provider.' . $providerName);
@@ -58,10 +57,9 @@ trait GoogleAuthTrait
             die('شبکه ی اجتماعی هدف نا مشخص است.');
         }
 
-
         // check if uid+provide exists in db - if not create it first
 
-        $secret = urlencode(\Str::random() . (time() . $user_id . $uid));
+        $secret = (\Str::random() . (time() . $user_id . $uid));
         $user = [
             'uid' => $uid,
             'user_id' => $user_id,
@@ -168,6 +166,50 @@ trait GoogleAuthTrait
             $row->delete();
             if ($error) return response($e->getMessage());
             return false;
+        }
+    }
+
+
+    function revokeGoogleAccessToken($providerName, $uid, $user_id, $error = true)
+    {
+        if (!$user_id) {
+            if ($error) return $this->error('شناسه پلتفرم الزامی است');
+            return false;
+        }
+        $user = [
+            'uid' => $uid,
+            'user_id' => $user_id,
+            'provider' => $providerName,
+        ];
+
+        $providers = Token::$PROVIDERS;
+        if (!in_array($providerName, $providers)) {
+            if ($error) $this->error('مشکلی در پیدا رخ داد');
+            return false;
+        }
+
+        $this->row = Token::where($user)->first();
+
+        if (!$uid || !$this->row || $this->row->uid != $uid) {
+            if ($error) $this->error('توکنی موجود نیست');
+            return false;
+        }
+        if (!$this->row->access_token) {
+            $this->row->delete();
+            return true;
+        }
+
+        $this->setGoogleScopeAndRedirect($providerName);
+
+        try {
+            $this->client->revokeToken($this->row->access_token);
+            $this->row->delete();
+            return true;
+        } catch (\Exception $e) {
+            // TODO: add error handler
+            $this->row->delete();
+            if ($error) return response($e->getMessage());
+            return true;
         }
     }
 

@@ -52,7 +52,7 @@ class AuthController extends Controller
 
     public function googleAuth($providerName, GoogleAuthRequest $request)
     {
-        $secret = urldecode($request->secret);
+        $secret = ($request->secret);
         $this->row = $row = Token::where(['secret' => $secret])->first();
 
         if (!$this->row->uid || !$this->row->user_id) {
@@ -76,11 +76,10 @@ class AuthController extends Controller
         session()->put('user_id', $this->row->user_id);
 
         $this->setGoogleScopeAndRedirect($providerName);
-
+        $this->client->setPrompt('consent');
         // Request authorization from the user.
         $authUrl = $this->client->createAuthUrl();
         return response()->redirectTo($authUrl);
-
     }
 
     public function googleAuthBack($providerName, GoogleAuthRequest $request)
@@ -89,14 +88,14 @@ class AuthController extends Controller
         $uid = session()->get('uid');
         $user_id = session()->get('user_id');
         if (!$uid || !$user_id) {
-            die('مدت زمان بازگشت خیلی طولانی شد. لطفا مجددا وارد شوید.');
+            return $this->error('مدت زمان بازگشت خیلی طولانی شد. لطفا مجددا وارد شوید.');
         }
         if (!$uid) {
-            return die('ورود منقضی شده است. لطفا پنجره را ببندید دوباره باز کنید.');
+            return $this->error('ورود منقضی شده است. لطفا پنجره را ببندید دوباره باز کنید.');
         }
         $providers = Token::$PROVIDERS;
         if (!in_array($providerName, $providers)) {
-            die('مشکلی در لاگین رخ داده است!');
+            return $this->error('مشکلی در لاگین رخ داده است!');
         }
         // check if uid+provide exists in db - if not create it first
         $user = [
@@ -105,7 +104,8 @@ class AuthController extends Controller
             'user_id' => $user_id,
             'provider' => $providerName,
         ];
-        $row = Token::findOrFail($user);
+        //dd($user);
+        $row = Token::where($user)->first();
         $authCode = trim($request->code);
         $this->setGoogleScopeAndRedirect($providerName);
 
@@ -115,10 +115,9 @@ class AuthController extends Controller
             $exchanged = $this->client->fetchAccessTokenWithAuthCode($authCode);
             //dd($exchanged);
             $access_token = $exchanged['access_token'];
-            $refresh_token = $exchanged['refresh_token'];
+            $refresh_token = $exchanged['refresh_token'] ?? null;
             $time = time();
             $expire = $exchanged['expires_in'];
-
 
             // store code
             $row->access_token = $access_token;
@@ -134,7 +133,7 @@ class AuthController extends Controller
             $userInfo->uid = $uid;
             $userInfo->user_id = $uid;
             $userInfo->auth_row_id = $row->id;
-            return response()->json($userInfo);
+            return die('<script>parent.close();</script>');
         } catch (\Exception $e) {
             return response($e->getMessage());
         }
@@ -181,6 +180,24 @@ class AuthController extends Controller
         }
     }
 
+    function revokeGoogleAccess($providerName, GoogleAuthRequest $request)
+    {
+        $user_id = auth()->user()->id;
+        $uid = intval($request->uid);
+        $revoke = $this->revokeGoogleAccessToken($providerName, $uid, $user_id, false);
+        if ($revoke) {
+            return response()->json([
+                'status' => true,
+                'data' => 'با موفقیت حذف شد.'
+            ]);
+        } else {
+            return response()->json([
+                'status' => false,
+                'data' => 'مشکلی در حذف توکن رخ داد'
+            ]);
+        }
+    }
+
     function getGoogleProfileOrAuthLink($providerName, GoogleAuthRequest $request)
     {
         $user_id = auth()->user()->id;
@@ -196,15 +213,25 @@ class AuthController extends Controller
                         'type' => 'profile',
                         'data' => $this->userInfo,
                     ]);
+                } else {
+                    return response()->json([
+                        'status' => false,
+                        'type' => 'error',
+                        'data' => 'wrong_user_id',
+                    ]);
                 }
             } catch (\Exception $e) {
                 // TODO: show Error
-                return response($e->getMessage());
+                return response()->json([
+                    'status' => false,
+                    'type' => 'error',
+                    'data' => $e->getMessage(),
+                ]);
             }
         } else {
             $link = $this->googleAuthLink($uid, $user_id, $providerName);
             return response()->json([
-                'status' => false,
+                'status' => true,
                 'type' => 'link',
                 'data' => $link,
             ]);
