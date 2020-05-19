@@ -20,5 +20,5 @@ Route::get('/', function () {
 
 // auth for google
 Route::get('/google/auth-classic/{provider}', 'Google\AuthController@googleAuthClassic');
-Route::get('/google/auth/{provider}?secret={secret}', 'Google\AuthController@googleAuth')->name('googleAuth');
+Route::get('/google/auth/{provider}', 'Google\AuthController@googleAuth')->name('googleAuth');
 Route::get('/google/back/{provider}', 'Google\AuthController@googleAuthBack');

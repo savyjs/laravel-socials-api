@@ -52,25 +52,28 @@ class AuthController extends Controller
 
     public function googleAuth($providerName, GoogleAuthRequest $request)
     {
-        $secret = $request->secret;
-        $this->row = Token::findOrFail(['secret' => $secret, 'access_token' => null]);
+        $secret = urldecode($request->secret);
+        $this->row = $row = Token::where(['secret' => $secret])->first();
+
+        if (!$this->row->uid || !$this->row->user_id) {
+            die('کاربر یا پلتفرم موجود نیست.');
+        }
         $user = [
             'uid' => $this->row->uid,
             'user_id' => $this->row->user_id,
             'provider' => $providerName,
         ];
- 
+
         $providers = Token::$PROVIDERS;
         if (!in_array($providerName, $providers)) {
             die('شبکه ی اجتماعی هدف نا مشخص است.');
         }
 
-
         // check if uid+provide exists in db - if not create it first
 
-        session()->put('uid', $uid);
-        session()->put('user_id', $user_id);
-
+        session()->put('secret', $secret);
+        session()->put('uid', $this->row->uid);
+        session()->put('user_id', $this->row->user_id);
 
         $this->setGoogleScopeAndRedirect($providerName);
 
@@ -82,6 +85,7 @@ class AuthController extends Controller
 
     public function googleAuthBack($providerName, GoogleAuthRequest $request)
     {
+        $secret = session()->get('secret');
         $uid = session()->get('uid');
         $user_id = session()->get('user_id');
         if (!$uid || !$user_id) {
@@ -96,11 +100,12 @@ class AuthController extends Controller
         }
         // check if uid+provide exists in db - if not create it first
         $user = [
+            'secret' => $secret,
             'uid' => $uid,
             'user_id' => $user_id,
             'provider' => $providerName,
         ];
-        $row = Token::firstOrCreate($user);
+        $row = Token::findOrFail($user);
         $authCode = trim($request->code);
         $this->setGoogleScopeAndRedirect($providerName);
 
@@ -182,26 +187,27 @@ class AuthController extends Controller
         $uid = $request->uid;
         $this->setGoogleScopeAndRedirect($providerName);
 
-        if ($this->checkGoogleAccess($providerName, $uid, $user_id)) {
+        if ($this->checkGoogleAccess($providerName, $uid, $user_id, false)) {
+
             try {
                 if ($this->row->user_id == $user_id) {
                     return response()->json([
-                        'status' => false,
+                        'status' => true,
                         'type' => 'profile',
                         'data' => $this->userInfo,
-                    ]);
-                } else {
-                    $link = $this->googleAuthLink($uid, $user_id, $providerName);
-                    return response()->json([
-                        'status' => false,
-                        'type' => 'link',
-                        'data' => $link,
                     ]);
                 }
             } catch (\Exception $e) {
                 // TODO: show Error
                 return response($e->getMessage());
             }
+        } else {
+            $link = $this->googleAuthLink($uid, $user_id, $providerName);
+            return response()->json([
+                'status' => false,
+                'type' => 'link',
+                'data' => $link,
+            ]);
         }
     }
 

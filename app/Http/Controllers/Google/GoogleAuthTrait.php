@@ -17,6 +17,7 @@ use Google_Service_YouTube_Video;
 use Google_Service_YouTube_ThumbnailDetails;
 use Google_Service_YouTube_Thumbnail;
 use Google_Service_YouTube_VideoSnippet;
+use Illuminate\Support\Facades\Hash;
 use function Safe\ssdeep_fuzzy_hash;
 
 
@@ -60,7 +61,7 @@ trait GoogleAuthTrait
 
         // check if uid+provide exists in db - if not create it first
 
-        $secret = ssdeep_fuzzy_hash(time() . $user_id . $uid);
+        $secret = urlencode(\Str::random() . (time() . $user_id . $uid));
         $user = [
             'uid' => $uid,
             'user_id' => $user_id,
@@ -68,7 +69,7 @@ trait GoogleAuthTrait
             'provider' => $providerName,
         ];
         $row = Token::firstOrCreate($user);
-        $link = route('googleAuth', [$providerName, $secret]);
+        $link = route('googleAuth', [$providerName]) . '?secret=' . $secret;
 
         // Request authorization from the user.
         return $link;
@@ -118,7 +119,7 @@ trait GoogleAuthTrait
 
     }
 
-    function checkGoogleAccess($providerName, $uid, $user_id = null)
+    function checkGoogleAccess($providerName, $uid, $user_id = null, $error = true)
     {
         $user = [
             'uid' => $uid,
@@ -130,7 +131,7 @@ trait GoogleAuthTrait
 
         $providers = Token::$PROVIDERS;
         if (!in_array($providerName, $providers)) {
-            $this->error('مشکلی در پیدا رخ داد');
+            if ($error) $this->error('مشکلی در پیدا رخ داد');
             return false;
         }
         $row = Token::where($user)->first();
@@ -138,11 +139,11 @@ trait GoogleAuthTrait
 
         // dd($row->access_token);
         if (!$uid || !$row || $row->uid != $uid) {
-            $this->error('توکنی موجود نیست');
+            if ($error) $this->error('توکنی موجود نیست');
             return false;
         }
         if (!$row->access_token) {
-            $this->error('توکن خالی است');
+            if ($error) $this->error('توکن خالی است');
             $row->delete();
             return false;
         }
@@ -165,7 +166,8 @@ trait GoogleAuthTrait
         } catch (\Exception $e) {
             // TODO: add error handler
             $row->delete();
-            return response($e->getMessage());
+            if ($error) return response($e->getMessage());
+            return false;
         }
     }
 
