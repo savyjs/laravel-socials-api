@@ -19,10 +19,9 @@ class YoutubeController extends Controller
     use GoogleAuthTrait;
 
     //
-
-
-    function youtubeGetChannels($uid, GoogleAuthRequest $request)
+    function youtubeGetChannelDetails(GoogleAuthRequest $request)
     {
+        $uid = $request->uid;
         $cid = $request->channel_id;
         $user_id = $this->user->user_id;
         $user = [
@@ -43,6 +42,37 @@ class YoutubeController extends Controller
                 // TODO: show Error
                 return response($e->getMessage());
             }
+        }
+    }
+
+    function youtubeGetChannels(GoogleAuthRequest $request)
+    {
+        $uid = $request->uid;
+        $user_id = auth()->user()->id;
+
+        if ($this->checkGoogleAccess('youtube', $uid, $user_id, false)) {
+            try {
+                $service = new Google_Service_YouTube($this->client);
+                $channels = $service->channels->listChannels('brandingSettings', ['mine' => true]);
+                return response()->json([
+                    'status' => true,
+                    'type' => 'list',
+                    'data' => $channels
+                ]);
+            } catch (\Exception $e) {
+                // TODO: show Error
+                return response()->json([
+                    'status' => false,
+                    'type' => 'error',
+                    'data' => $e->getMessage()
+                ]);
+            }
+        } else {
+            return response()->json([
+                'status' => false,
+                'type' => 'token',
+                'data' => 'مشکلی در گرفتن توکن رخ داد'
+            ]);
         }
     }
 

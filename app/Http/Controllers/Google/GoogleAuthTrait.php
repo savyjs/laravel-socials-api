@@ -75,17 +75,17 @@ trait GoogleAuthTrait
     }
 
 
-    function refreshOneRow($uid, $providerName)
+    function refreshOneRow($uid, $providerName, $error = true)
     {
 
         $row = Token::whereNotNull('refresh_token')->whereUidAndProvider($uid, $providerName)->first();
         if (!$uid || !$row || $row->uid != $uid) {
-            return $this->error('توکنی موجود نیست.');
+            if ($error) return $this->error('توکنی موجود نیست.');
         }
 
         if (!$row->access_token) {
             $row->delete();
-            return $this->error('توکن خالی است.');
+            if ($error) return $this->error('توکن خالی است.');
         }
         // dd($uids);
         $providers = Token::$PROVIDERS;
@@ -109,12 +109,18 @@ trait GoogleAuthTrait
 
             // update access_token + refresh_token in uid+provider row
             $row->save();
-
+            return true;
         } catch (\Exception $e) {
             // set log that can't to refresh token
-            return response($e->getMessage());
+            if ($error) return response($e->getMessage());
+            return false;
         }
 
+    }
+
+    function getGoogleAccessToken($providerName, $uid, $user_id = null, $error = true)
+    {
+        return $this->checkGoogleAccess($providerName, $uid, $user_id = null, $error = true);
     }
 
     function checkGoogleAccess($providerName, $uid, $user_id = null, $error = true)
@@ -132,6 +138,7 @@ trait GoogleAuthTrait
             if ($error) $this->error('مشکلی در پیدا رخ داد');
             return false;
         }
+
         $row = Token::where($user)->first();
         // dd($row,$user);
 
@@ -146,7 +153,7 @@ trait GoogleAuthTrait
             return false;
         }
         if ($row->end_time < time()) {
-            $this->refreshOneRow($row->uid, $row->provider);
+            $this->refreshOneRow($row->uid, $row->provider, $error);
         }
 
         $this->setGoogleScopeAndRedirect($providerName);

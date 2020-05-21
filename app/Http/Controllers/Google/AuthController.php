@@ -31,7 +31,6 @@ class AuthController extends Controller
             die('شبکه ی اجتماعی هدف نا مشخص است.');
         }
 
-
         // check if uid+provide exists in db - if not create it first
         $user = [
             'uid' => $uid,
@@ -184,7 +183,7 @@ class AuthController extends Controller
     {
         $user_id = auth()->user()->id;
         $uid = intval($request->uid);
-        $revoke = $this->revokeGoogleAccessToken($providerName, $uid, $user_id, false);
+        $revoke = $this->revokeGoogleAccessToken($providerName, $uid, $user_id, true);
         if ($revoke) {
             return response()->json([
                 'status' => true,

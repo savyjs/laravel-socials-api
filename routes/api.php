@@ -28,8 +28,8 @@ Route::middleware('auth:api')->namespace('Google')->group(function () {
     Route::any('/google/auto-refresh', 'AuthController@googleRefreshAllTokens');
 
     // youtube routes
-    Route::any('/youtube/get-channels-list/{uid}', 'Google\YoutubeController@youtubeGetChannels');
-    Route::any('/youtube/insert-video/{uid}', 'Google\YoutubeController@youtubeInsertVideo');
+    Route::any('/youtube/get-channels-list', 'YoutubeController@youtubeGetChannels');
+    Route::any('/youtube/insert-video/{uid}', 'YoutubeController@youtubeInsertVideo');
 });
 
 
