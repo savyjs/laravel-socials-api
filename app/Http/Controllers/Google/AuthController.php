@@ -145,17 +145,19 @@ class AuthController extends Controller
         $uid = $request->uid;
         $this->setGoogleScopeAndRedirect($providerName);
 
-        if ($this->checkGoogleAccess($providerName, $uid, $user_id)) {
+        if ($this->checkGoogleAccess($providerName, $uid, $user_id, false)) {
             try {
                 if ($this->row->user_id == $user_id) {
-                    return response()->json($this->row->access_token);
+                    return response()->json(['status' => true, 'access_token' => $this->row->access_token]);
                 } else {
-                    return $this->error('مشکلی در تایید هویت رخ داد.');
+                    return response()->json(['status' => false, 'data' => 'noPresetValid', 'error' => 'login to youtube first']);
                 }
             } catch (\Exception $e) {
                 // TODO: show Error
                 return response($e->getMessage());
             }
+        } else {
+            return response()->json(['status' => false, 'data' => 'noToken', 'error' => 'login to youtube first']);
         }
     }
 
@@ -170,7 +172,7 @@ class AuthController extends Controller
                 if ($this->row->user_id == $user_id) {
                     return response()->json($this->userInfo);
                 } else {
-                    return $this->error('مشکلی در تایید هویت رخ داد.');
+                    return $this->error('مشکلی در تایید هویت رخ داد . ');
                 }
             } catch (\Exception $e) {
                 // TODO: show Error
@@ -187,7 +189,7 @@ class AuthController extends Controller
         if ($revoke) {
             return response()->json([
                 'status' => true,
-                'data' => 'با موفقیت حذف شد.'
+                'data' => 'با موفقیت حذف شد . '
             ]);
         } else {
             return response()->json([
@@ -241,7 +243,7 @@ class AuthController extends Controller
     public function googleRefreshAllTokens()
     {
 
-        $uids = Token::whereNotNull('refresh_token')->where('end_time', '>', time())->get();
+        $uids = Token::whereNotNull('refresh_token')->where('end_time', ' > ', time())->get();
 
         $providers = Token::$PROVIDERS;
         foreach ($uids as $j => $row) {
