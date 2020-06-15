@@ -54,8 +54,8 @@ class AuthController extends Controller
         $secret = ($request->secret);
         $this->row = $row = Token::where(['secret' => $secret])->first();
 
-        if (!$this->row->uid || !$this->row->user_id) {
-            die('کاربر یا پلتفرم موجود نیست.');
+        if (!$this->row || !$this->row->uid || !$this->row->user_id) {
+            return die('کاربر یا پلتفرم موجود نیست.');
         }
         $user = [
             'uid' => $this->row->uid,
@@ -134,7 +134,7 @@ class AuthController extends Controller
             $userInfo->auth_row_id = $row->id;
             return die('<script>parent.close();</script>');
         } catch (\Exception $e) {
-            return response($e->getMessage());
+            return response($e->getMessage(),$e->getTraceAsString());
         }
 
     }

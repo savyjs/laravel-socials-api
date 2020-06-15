@@ -14,9 +14,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-
 // auth and token requests
-
 
 Route::middleware('auth:api')->namespace('Google')->group(function () {
     // google token
@@ -29,9 +27,8 @@ Route::middleware('auth:api')->namespace('Google')->group(function () {
 
     // youtube routes
     Route::any('/youtube/get-channels-list', 'YoutubeController@youtubeGetChannels');
-    Route::any('/youtube/insert-video/{uid}', 'YoutubeController@youtubeInsertVideo');
+    Route::any('/youtube/insert-video', 'YoutubeController@youtubeInsertVideo');
 });
-
 
 Route::post('login', 'PassportController@login');
 Route::post('register', 'PassportController@register');

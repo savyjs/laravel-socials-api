@@ -66,7 +66,7 @@ trait GoogleAuthTrait
             'secret' => $secret,
             'provider' => $providerName,
         ];
-        $row = Token::firstOrCreate($user);
+        Token::firstOrCreate($user);
         $link = route('googleAuth', [$providerName]) . '?secret=' . $secret;
 
         // Request authorization from the user.
