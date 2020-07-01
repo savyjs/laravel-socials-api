@@ -193,6 +193,10 @@ class TwitterController extends Controller
 
                         if (file_exists($tempFile)) {
                             $uploaded_media = Twitter::uploadMedia(['media' => File::get($tempFile)]);
+                            try{
+                                unlink($tempFile);
+                                File::delete($tempFile);
+                            }catch (\Exception $f){}
                             $status['media_ids'] = $uploaded_media->media_id_string;
                         }else{
                             dd($tempFile . ' dosn`t exists');
