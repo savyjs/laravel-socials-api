@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "543dfe19005ec3b1220851044f76a91d",
+    "content-hash": "0f6818ef85fed2e029f019bdab6115c0",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -57,6 +57,53 @@
                 "stack"
             ],
             "time": "2019-12-24T22:41:47+00:00"
+        },
+        {
+            "name": "atymic/tmhoauth",
+            "version": "0.8.6",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/atymic/tmhOAuth.git",
+                "reference": "f24746d8ef2a44f62d0cbca9f3fcc3a320c99e05"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/atymic/tmhOAuth/zipball/f24746d8ef2a44f62d0cbca9f3fcc3a320c99e05",
+                "reference": "f24746d8ef2a44f62d0cbca9f3fcc3a320c99e05",
+                "shasum": ""
+            },
+            "require": {
+                "ext-curl": "*",
+                "php": ">=5.3.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "tmhOAuth": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "themattharris",
+                    "email": "matt@themattharris.com",
+                    "role": "Developer"
+                },
+                {
+                    "name": "atymic",
+                    "email": "atymicq@gmail.com",
+                    "role": "Maintainer"
+                }
+            ],
+            "description": "A maintained fork of themattharris/tmhOAuth",
+            "keywords": [
+                "oauth",
+                "twitter"
+            ],
+            "time": "2020-06-21T00:50:34+00:00"
         },
         {
             "name": "brick/math",
@@ -1018,6 +1065,77 @@
                 "url"
             ],
             "time": "2019-07-01T23:21:34+00:00"
+        },
+        {
+            "name": "irazasyed/telegram-bot-sdk",
+            "version": "v3.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/irazasyed/telegram-bot-sdk.git",
+                "reference": "cc0af4e0ee41be5a0e732572e2de86abbe43128d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/irazasyed/telegram-bot-sdk/zipball/cc0af4e0ee41be5a0e732572e2de86abbe43128d",
+                "reference": "cc0af4e0ee41be5a0e732572e2de86abbe43128d",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^6.1",
+                "guzzlehttp/psr7": "^1.3",
+                "illuminate/support": "^5.5 || ^6.0 || ^7.0",
+                "league/event": "^2.1",
+                "php": "^7.2"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^8.5"
+            },
+            "suggest": {
+                "illuminate/container": "Hold dependencies to be injected in commands constructors",
+                "irazasyed/larasupport": "Allows you to use any Laravel Package in Lumen by adding support!"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "3.0-dev"
+                },
+                "laravel": {
+                    "providers": [
+                        "Telegram\\Bot\\Laravel\\TelegramServiceProvider"
+                    ],
+                    "aliases": {
+                        "Telegram": "Telegram\\Bot\\Laravel\\Facades\\Telegram"
+                    }
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Telegram\\Bot\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Syed Irfaq R.",
+                    "email": "syed+gh@lukonet.com",
+                    "homepage": "https://github.com/irazasyed"
+                }
+            ],
+            "description": "The Unofficial Telegram Bot API PHP SDK",
+            "homepage": "https://github.com/irazasyed/telegram-bot-sdk",
+            "keywords": [
+                "laravel",
+                "laravel telegram",
+                "telegram",
+                "telegram bot",
+                "telegram bot api",
+                "telegram php",
+                "telegram sdk"
+            ],
+            "time": "2020-04-11T14:59:09+00:00"
         },
         {
             "name": "laminas/laminas-diactoros",
@@ -4392,6 +4510,69 @@
                 "dump"
             ],
             "time": "2020-04-12T16:45:47+00:00"
+        },
+        {
+            "name": "thujohn/twitter",
+            "version": "2.2.16",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/atymic/twitter.git",
+                "reference": "f35481b575dba75f54637de7fe96622af4403d23"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/atymic/twitter/zipball/f35481b575dba75f54637de7fe96622af4403d23",
+                "reference": "f35481b575dba75f54637de7fe96622af4403d23",
+                "shasum": ""
+            },
+            "require": {
+                "atymic/tmhoauth": "0.8.6",
+                "ext-json": "*",
+                "illuminate/support": "~5.5 || ~6.0 || ~7.0",
+                "php": ">7.2.5"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^8.3"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Thujohn\\Twitter\\TwitterServiceProvider"
+                    ],
+                    "aliases": {
+                        "Twitter": "Thujohn\\Twitter\\Facades\\Twitter"
+                    }
+                }
+            },
+            "autoload": {
+                "psr-0": {
+                    "Thujohn\\Twitter": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "thujohn",
+                    "email": "jonathan.thuau@gmail.com"
+                },
+                {
+                    "name": "atymic",
+                    "email": "atymicq@gmail.com",
+                    "homepage": "https://atymic.dev"
+                }
+            ],
+            "description": "Twitter API for Laravel",
+            "keywords": [
+                "laravel",
+                "laravel4",
+                "laravel5",
+                "twitter"
+            ],
+            "time": "2020-06-23T16:08:59+00:00"
         },
         {
             "name": "tijsverkoyen/css-to-inline-styles",

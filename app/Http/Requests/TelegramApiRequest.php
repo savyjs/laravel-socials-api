@@ -13,7 +13,7 @@ class TelegramApiRequest extends FormRequest
      */
     public function authorize()
     {
-        return false;
+        return true;
     }
 
     /**
@@ -24,7 +24,9 @@ class TelegramApiRequest extends FormRequest
     public function rules()
     {
         return [
-            //
+            'uid' => 'required',
+            'secrets' => 'required|array',
+            'targets' => 'required|array'
         ];
     }
 }
