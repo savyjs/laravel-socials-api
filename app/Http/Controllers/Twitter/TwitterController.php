@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\GoogleAuthRequest;
 use App\Token;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Session;
 use Thujohn\Twitter\Facades\Twitter;
@@ -21,7 +22,7 @@ class TwitterController extends Controller
         $user_id = auth()->user()->id;
         $uid = $request->uid;
 
-        if ($this->checkTwitterAccess($uid, $user_id, true)) {
+        if ($this->checkTwitterAccess($uid, $user_id, false)) {
 
             try {
                 if ($this->row->user_id == $user_id) {
@@ -99,7 +100,6 @@ class TwitterController extends Controller
             return Redirect::to($url);
         }
         die('برای لاگین با تویتر مشکلی رخ داد. به مدیریت خبر بدهید.');
-        return Redirect::route('twitter.error');
 
     }
 
@@ -165,11 +165,51 @@ class TwitterController extends Controller
                     'secret' => $token['oauth_token_secret'],
                 ]);
                 $row->save();
-                dd($row, $credentials, $token, $request_token);
+                //dd($row, $credentials, $token, $request_token);
                 return die('<script>parent.close();</script>');
             }
 
             return Redirect::route('twitter.error')->with('flash_error', 'Crab! Something went wrong while signing you up!');
         }
+    }
+
+    public function sendTweet(GoogleAuthRequest $request)
+    {
+        try {
+            $providerName = 'twitter';
+            $user_id = auth()->user()->id;
+            $uid = $request->uid;
+
+            if ($this->checkTwitterAccess($uid, $user_id, true)) {
+                $credentials = Twitter::getCredentials();
+                if (is_object($credentials)) {
+                    $attachment = isset($request->attachment) ? $request->attachment : null;
+                    $text = $request->text;
+                    $status = ['status' => $text];
+                    if ($attachment) {
+                        $filename = basename($attachment);
+                        $tempFile = tempnam(sys_get_temp_dir(), $filename);
+                        copy($attachment, $tempFile);
+
+                        if (file_exists($tempFile)) {
+                            $uploaded_media = Twitter::uploadMedia(['media' => File::get($tempFile)]);
+                            $status['media_ids'] = $uploaded_media->media_id_string;
+                        }else{
+                            dd($tempFile . ' dosn`t exists');
+                        }
+                    }
+                    $sent = Twitter::postTweet($status);
+                    return response()->json($sent);
+                } else {
+                    return response()->json([
+                        'status' => 401,
+                        'text' => 'Login to twitter first'
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            dd($e->getMessage(), $e);
+        }
+
     }
 }

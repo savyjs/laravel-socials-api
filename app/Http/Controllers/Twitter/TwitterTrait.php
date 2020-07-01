@@ -72,7 +72,7 @@ trait TwitterTrait
         }
 
         $row = Token::where($user)->first();
-        // dd($row,$user);
+         // dd($row,$user);
 
         // dd($row->access_token);
         if (!$uid || !$row || $row->uid != $uid) {
@@ -81,7 +81,7 @@ trait TwitterTrait
         }
         if (!$row->access_token) {
             if ($error) $this->error('توکن خالی است');
-            //$row->delete();
+            $row->delete();
             return false;
         }
 
@@ -99,8 +99,7 @@ trait TwitterTrait
             return true;
         } catch (\Exception $e) {
             // TODO: add error handler
-            // $row->delete();
-            dd($e);
+            $row->delete();
             if ($error) return response($e->getMessage());
             return false;
         }
