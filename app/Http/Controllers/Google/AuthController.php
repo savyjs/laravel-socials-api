@@ -103,7 +103,7 @@ class AuthController extends Controller
             'user_id' => $user_id,
             'provider' => $providerName,
         ];
-        //dd($user);
+        dd($user);
         $row = Token::where($user)->first();
         $authCode = trim($request->code);
         $this->setGoogleScopeAndRedirect($providerName);
