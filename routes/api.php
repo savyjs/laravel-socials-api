@@ -29,8 +29,8 @@ Route::middleware('auth:api')->namespace('Twitter')->group(function () {
     Route::any('/twitter/get-profile-or-auth-link', 'TwitterController@getTwitterProfileOrAuthLink');
     Route::any('/twitter/auto-refresh', 'TwitterController@twitterRefreshAllTokens');
     Route::any('/twitter/send-tweet', 'TwitterController@sendTweet');
-
 });
+
 Route::middleware('auth:api')->namespace('Google')->group(function () {
     // google token
     Route::any('/google/revoke-token/{provider}', 'AuthController@revokeGoogleAccess');
@@ -38,13 +38,14 @@ Route::middleware('auth:api')->namespace('Google')->group(function () {
     Route::any('/google/get-token/{provider}', 'AuthController@getGoogleAccessToken');
     Route::any('/google/get-profile/{provider}', 'AuthController@getGoogleProfile');
     Route::any('/google/get-profile-or-auth-link/{provider}', 'AuthController@getGoogleProfileOrAuthLink');
-    Route::any('/google/auto-refresh', 'AuthController@googleRefreshAllTokens');
 
     // youtube routes
     Route::any('/youtube/get-channels-list', 'YoutubeController@youtubeGetChannels');
     Route::any('/youtube/insert-video', 'YoutubeController@youtubeInsertVideo');
 
 });
+Route::any('/google/auto-refresh', 'Google\AuthController@googleRefreshAllTokens');
+
 
 Route::post('login', 'PassportController@login');
 Route::post('register', 'PassportController@register');

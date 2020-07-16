@@ -1,12 +1,12 @@
 <?php
 
 namespace App\Http\Controllers\Telegram;
-ini_set('memory_limit', '2G');
+ini_set('memory_limit', '3G');
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TelegramApiRequest;
 use App\Token;
-use http\Client\Request;
+use Illuminate\Support\Facades\Request;
 use Telegram\Bot\Api;
 use Telegram\Bot\FileUpload\InputFile;
 use Telegram\Bot\Traits\Telegram;
@@ -15,25 +15,30 @@ class TelegramController extends Controller
 {
     public $telegram = null;
 
+    /**
+     * @return \Illuminate\Http\JsonResponse
+     * /*
+     * 'uid',
+     * 'secret',
+     * 'targets',
+     * 'text',
+     * 'attachment'
+     */
     public function sendMessage()
     {
         try {
-            $request = \Illuminate\Support\Facades\Request::class;
-            $data = $request::only([
-                'uid',
-                'secret',
-                'targets',
-                'text',
-                'attachment'
-            ]);
+            $data = Request::all();
+
             if (!isset($data['targets']) || !is_array($data['targets'])) {
                 return response()->json([
                     'status' => 400,
                     'error' => 'please set target identifiers as array likne ["@username",..]',
                     'data' => $data,
+                    'targets' => $data['targets']
                 ]);
             }
             $targets = ($data['targets']);
+            $title = $data['title'];
             $text = $data['text'];
             $attachment = isset($data['attachment']) ? $data['attachment'] : null;
             $token = $data['secret'];
@@ -53,6 +58,7 @@ class TelegramController extends Controller
                                 ['chat_id' => $target, 'text' => $text]
                             );
                         } catch (\Exception $er) {
+                            return response()->json([-1, $er->getMessage(), $er]);
                         }
                     }
                 }
@@ -62,56 +68,58 @@ class TelegramController extends Controller
 
                     $finfo = new \finfo(FILEINFO_MIME_TYPE);
                     $type = $finfo->buffer($attachmentContent);
-                    //dd($type);
+                    //response()->json($type);
                     foreach ($targets as $target) {
                         $telegramResponse ['chat_id'] = $target;
-                        //dd($telegramResponse);
+                        //response()->json($telegramResponse);
                         if ($text) {
                             $telegramResponse['caption'] = $text;
                         }
+                        $fileName = $title ?? basename($attachment);
                         if (substr($type, 0, 6) === 'image/') {
-                            $telegramResponse['photo'] = InputFile::create($attachment, time());
+
+                            $telegramResponse['photo'] = InputFile::create($attachment, $fileName ?? time());
                             try {
                                 $response[] = $this->telegram->sendPhoto($telegramResponse);
-                                dd($telegramResponse, $type);
+                                //return response()->json([0, 1, $telegramResponse, $type]);
                             } catch (\Exception $errorSend) {
-                                //dd([$errorSend->getMessage(), $errorSend]);
+                                //response()->json([$errorSend->getMessage(), $errorSend]);
                             }
                         } else if (substr($type, 0, 6) === 'video/') {
-                            $telegramResponse['video'] = InputFile::create($attachment, time());
+                            $telegramResponse['video'] = InputFile::create($attachment, $fileName ?? time());
                             try {
                                 $response[] = $this->telegram->sendVideo($telegramResponse);
-                                dd($telegramResponse, $type);
+                                //return response()->json([0, 2, $telegramResponse, $type]);
                             } catch (\Exception $errorSend) {
-                                //dd([$errorSend->getMessage(), $errorSend]);
+                                //response()->json([$errorSend->getMessage(), $errorSend]);
                             }
-                        }else if (substr($type, 0, 6) === 'audio/') {
-                            $telegramResponse['audio'] = InputFile::create($attachment, time());
+                        } else if (substr($type, 0, 6) === 'audio/') {
+                            $telegramResponse['audio'] = InputFile::create($attachment, $fileName ?? time());
                             try {
                                 $response[] = $this->telegram->sendAudio($telegramResponse);
-                                dd($telegramResponse, $type);
+                                //return response()->json([0, 3, $telegramResponse, $type]);
                             } catch (\Exception $errorSend) {
-                                //dd([$errorSend->getMessage(), $errorSend]);
+                                //response()->json([$errorSend->getMessage(), $errorSend]);
                             }
                         } else {
-                            $telegramResponse['document'] = InputFile::create($attachment, time());
+                            $telegramResponse['document'] = InputFile::create($attachment, $fileName ?? time());
                             try {
                                 $response[] = $this->telegram->sendDocument($telegramResponse);
-                                dd($telegramResponse, $type);
+                                return response()->json([0, 4, $telegramResponse, $type]);
                             } catch (\Exception $errorSend) {
-                                //dd([$errorSend->getMessage(), $errorSend]);
+                                //response()->json([$errorSend->getMessage(), $errorSend]);
                             }
                         }
                     }
                 } catch (\Exception $er) {
-                    dd([$er->getMessage(), $er]);
+                    return response()->json([1, $er->getMessage(), $er]);
                 }
             }
 
 
-            dd($response);
+            return response()->json($response);
         } catch (\Exception $e) {
-            dd($e->getMessage(), $e);
+            return response()->json([3, $e->getMessage(), $e]);
         }
     }
 

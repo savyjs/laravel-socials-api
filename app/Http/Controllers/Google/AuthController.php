@@ -103,7 +103,6 @@ class AuthController extends Controller
             'user_id' => $user_id,
             'provider' => $providerName,
         ];
-        dd($user);
         $row = Token::where($user)->first();
         $authCode = trim($request->code);
         $this->setGoogleScopeAndRedirect($providerName);
@@ -134,7 +133,7 @@ class AuthController extends Controller
             $userInfo->auth_row_id = $row->id;
             return die('<script>parent.close();</script>');
         } catch (\Exception $e) {
-            return response($e->getMessage(),$e->getTraceAsString());
+            return response($e->getMessage(), $e->getTraceAsString());
         }
 
     }
@@ -243,8 +242,8 @@ class AuthController extends Controller
     public function googleRefreshAllTokens()
     {
 
-        $uids = Token::whereNotNull('refresh_token')->where('end_time', ' > ', time())->get();
-
+        $uids = Token::whereNotNull('refresh_token')->where('provider', 'youtube')->get();
+        $items = [];
         $providers = Token::$PROVIDERS;
         foreach ($uids as $j => $row) {
             $time = time();
@@ -265,7 +264,7 @@ class AuthController extends Controller
 
                 // store code
 
-                // dd($time, $refresh_token, $exchanged, $access_token);
+                $items[] = ([$time, $refresh_token, $exchanged, $access_token]);
 
                 // store code
                 $row->access_token = $access_token;
@@ -280,6 +279,7 @@ class AuthController extends Controller
                 return response($e->getMessage());
             }
         }
+        // dd($items,$uids);
     }
 
 

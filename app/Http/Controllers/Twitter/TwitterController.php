@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Twitter;
 
+ini_set('memory_limit', '3G');
+
 use App\Http\Controllers\Controller;
 use App\Http\Requests\GoogleAuthRequest;
 use App\Token;
@@ -14,6 +16,7 @@ use Thujohn\Twitter\Facades\Twitter;
 class TwitterController extends Controller
 {
     use TwitterTrait;
+    use UnfollowerTrait;
 
     //
     function getTwitterProfileOrAuthLink(GoogleAuthRequest $request)
@@ -173,7 +176,50 @@ class TwitterController extends Controller
         }
     }
 
-    public function sendTweet(GoogleAuthRequest $request)
+    /**
+     * @param GoogleAuthRequest $request - [
+     * uid
+     * attachment
+     * text
+     *
+     * ]
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function unfollowing(GoogleAuthRequest $request)
+    {
+        try {
+            $providerName = 'twitter';
+            $user_id = auth()->user()->id;
+            $uid = $request->uid;
+
+            if ($this->checkTwitterAccess($uid, $user_id, true)) {
+                $credentials = Twitter::getCredentials();
+                if (is_object($credentials)) {
+                    $users = $this->getUnfollowedUsers($uid, $user_id);
+                    return response()->json(['sent' => $users]);
+                } else {
+                    return response()->json([
+                        'status' => 401,
+                        'text' => 'Login to twitter first'
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            response()->json(['error2' => $e->getMessage()]);
+        }
+
+    }
+
+    function getUnfollowedUsers($uid, $user_id)
+    {
+        if ($this->checkTwitterAccess($uid, $user_id, true)) {
+
+        }
+    }
+
+
+    public
+    function sendTweet(GoogleAuthRequest $request)
     {
         try {
             $providerName = 'twitter';
@@ -189,21 +235,37 @@ class TwitterController extends Controller
                     if ($attachment) {
                         $filename = basename($attachment);
                         $tempFile = tempnam(sys_get_temp_dir(), $filename);
-                        copy($attachment, $tempFile);
+                        try {
+                            copy($attachment, $tempFile);
+                        } catch (\Exception $ce) {
+                            return response()->json(['status' => 401, 'error-1', 'text' => $ce->getMessage()]);
+                        }
 
+                        if (!file_exists($tempFile)) {
+                            return response()->json(['status' => 401, 'error-1', 'text' => 'file dosn"t exists']);
+                        }
                         if (file_exists($tempFile)) {
-                            $uploaded_media = Twitter::uploadMedia(['media' => File::get($tempFile)]);
-                            try{
-                                unlink($tempFile);
-                                File::delete($tempFile);
-                            }catch (\Exception $f){}
+                            try {
+                                $uploaded_media = Twitter::uploadMedia(['media' => File::get($tempFile)]);
+                            } catch (\Exception $f) {
+                                dd($f);
+                                return response()->json(['status' => 401, 'error0', 'text' => $f->getMessage(), $f]);
+                            }
                             $status['media_ids'] = $uploaded_media->media_id_string;
-                        }else{
-                            dd($tempFile . ' dosn`t exists');
+                        } else {
+                            return response()->json(['status' => 401, 'error1', 'text' => $tempFile . ' dosn`t exists']);
                         }
                     }
                     $sent = Twitter::postTweet($status);
-                    return response()->json($sent);
+                    try {
+                        if ($tempFile) {
+                            unlink($tempFile);
+                            File::delete($tempFile);
+                        }
+                    } catch (\Exception $d) {
+                        //return response()->json(['status' => 401, 'error00', 'text' => $d->getMessage()]);
+                    }
+                    return response()->json(['sent' => $sent]);
                 } else {
                     return response()->json([
                         'status' => 401,
@@ -212,7 +274,7 @@ class TwitterController extends Controller
                 }
             }
         } catch (\Exception $e) {
-            dd($e->getMessage(), $e);
+            response()->json(['error2' => $e->getMessage()]);
         }
 
     }

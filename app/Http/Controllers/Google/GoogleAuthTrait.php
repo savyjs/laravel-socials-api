@@ -153,7 +153,7 @@ trait GoogleAuthTrait
             return false;
         }
         if ($row->end_time < time()) {
-            $this->refreshOneRow($row->uid, $row->provider, $error);
+            // $this->refreshOneRow($row->uid, $row->provider, $error);
         }
 
         $this->setGoogleScopeAndRedirect($providerName);
