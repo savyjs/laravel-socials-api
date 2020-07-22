@@ -18,6 +18,56 @@ class TwitterController extends Controller
     use TwitterTrait;
     use UnfollowerTrait;
 
+    /**
+     * @param GoogleAuthRequest $request - [
+     * uid
+     * attachment
+     * text
+     *
+     * ]
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getTwitterUnfollowers(GoogleAuthRequest $request)
+    {
+        try {
+            $providerName = 'twitter';
+            $user_id = auth()->user()->id;
+            $uid = $request->uid;
+            $cursor = 0;
+            if (isset($request->cursor)) $cursor = $request->cursor ?? 0;
+            if ($this->checkTwitterAccess($uid, $user_id, true)) {
+                $credentials = Twitter::getCredentials();
+                if (is_object($credentials)) {
+                    $users = $this->getUnfollowedUsers($uid, $user_id, $cursor);
+                    if (!count($users)) dd($users, $uid, $user_id, $cursor);
+                    return response()->json($users);
+                } else {
+                    return response()->json([
+                        'status' => 401,
+                        'text' => 'Login to twitter first'
+                    ]);
+                }
+            } else {
+                return response()->json([
+                    'status' => 401,
+                    'text' => 'Login to twitter first!'
+                ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error2' => $e->getMessage()]);
+        }
+    }
+
+    function getUnfollowedUsers($uid, $user_id, $cursor = 0)
+    {
+        if ($this->checkTwitterAccess($uid, $user_id, true)) {
+            $name = (Twitter::getCredentials())->screen_name;
+            return $this->getUnfollowers($name, $cursor);
+        } else {
+            return ['error' => 'access denied!'];
+        }
+    }
+
     //
     function getTwitterProfileOrAuthLink(GoogleAuthRequest $request)
     {
@@ -173,47 +223,6 @@ class TwitterController extends Controller
             }
 
             return Redirect::route('twitter.error')->with('flash_error', 'Crab! Something went wrong while signing you up!');
-        }
-    }
-
-    /**
-     * @param GoogleAuthRequest $request - [
-     * uid
-     * attachment
-     * text
-     *
-     * ]
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function unfollowing(GoogleAuthRequest $request)
-    {
-        try {
-            $providerName = 'twitter';
-            $user_id = auth()->user()->id;
-            $uid = $request->uid;
-
-            if ($this->checkTwitterAccess($uid, $user_id, true)) {
-                $credentials = Twitter::getCredentials();
-                if (is_object($credentials)) {
-                    $users = $this->getUnfollowedUsers($uid, $user_id);
-                    return response()->json(['sent' => $users]);
-                } else {
-                    return response()->json([
-                        'status' => 401,
-                        'text' => 'Login to twitter first'
-                    ]);
-                }
-            }
-        } catch (\Exception $e) {
-            response()->json(['error2' => $e->getMessage()]);
-        }
-
-    }
-
-    function getUnfollowedUsers($uid, $user_id)
-    {
-        if ($this->checkTwitterAccess($uid, $user_id, true)) {
-
         }
     }
 

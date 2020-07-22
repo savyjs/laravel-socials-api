@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use Dotenv\Dotenv;
+use Dotenv\Loader\Loader;
+use http\Env;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -24,5 +27,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         //
+       // dd(env('APP_NAME'));
+
     }
 }

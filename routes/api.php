@@ -26,6 +26,7 @@ Route::middleware('auth:api')->namespace('Twitter')->group(function () {
     Route::any('/twitter/check-token/{uid}', 'TwitterController@checkTwitterAccess');
     Route::any('/twitter/get-token', 'TwitterController@getTwitterAccessToken');
     Route::any('/twitter/get-profile', 'TwitterController@getTwitterProfile');
+    Route::any('/twitter/get-unfollowers', 'TwitterController@getTwitterUnfollowers');
     Route::any('/twitter/get-profile-or-auth-link', 'TwitterController@getTwitterProfileOrAuthLink');
     Route::any('/twitter/auto-refresh', 'TwitterController@twitterRefreshAllTokens');
     Route::any('/twitter/send-tweet', 'TwitterController@sendTweet');

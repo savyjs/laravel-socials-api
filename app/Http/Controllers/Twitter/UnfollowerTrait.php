@@ -13,57 +13,78 @@ use Thujohn\Twitter\Facades\Twitter;
 
 trait UnfollowerTrait
 {
-    public function getUnfollwersList()
+    public function getUnfollwersList($screen_name)
     {
-        $list = Twitter::getFriendshipsLookup(['screen_name' => 'savyedinson', 'connections' => 'followed_by', 'count' => "2500", 'format' => 'array']);
-    }
-
-    public function getUnfollowers()
-    {
-        ini_set('max_execution_time', '5000');
+        $list = Twitter::getFriendshipsLookup(['screen_name' => $screen_name, 'connections' => 'followed_by', 'count' => "100", 'format' => 'array']);
         $unfollowed = [];
-        $hasUser = true;
-        $cursor = file_get_contents('cursor.txt');
-        $allFollowers = [];
-        echo '-b1-';
-        while ($hasUser) {
-            echo '-while cycle-';
-            sleep(rand(1, 3));
-            echo $cursor . "<br />";
-            try {
-                if ($cursor) {
-                    $following = TweetController::getFollowing(['screen_name' => 'ehsant_',
-                        'cursor' => $cursor, 'count' => "100", 'format' => 'array']);
-                    foreach ($following['users'] as $i => $user) {
-                        if (!$user['followed_by']) {
-                            Twitter::postUnfollow(['user_id' => $user['id']]);
-                            array_push($unfollowed, $user['screen_name']);
-                            echo '-b6: - <br />' . $user['screen_name'] . '<br />';
-                        }
-                    }
-                    if (count($following['users']) && $following['next_cursor']) {
-                        $cursor = $following['next_cursor_str'];
-                        $select = $cursor;
-                        file_put_contents('cursor.txt', $select);
-                    } else {
-                        $hasUser = false;
-                        break;
-                    }
-                } else {
-                    echo '-b10-';
-                    $hasUser = false;
-                    break;
-                }
-            } catch (\Exception $e) {
-                echo '<hr />' . 'failed server:' . $e->getMessage() . '<br />';
-                echo 'now:' . time() . ' <br /> will refresh again at: 180 seconds ' . '<meta http-equiv="refresh" content="180">';
-                $hasUser = false;
-                echo '-b9-';
-                break;
+        foreach ($list as $item) {
+            if (isset($item['connections']) && isset($item['connections'][0]) && ($item['connections'][0] == 'following') && (!isset($item['connections'][1]) || ($item['connections'][1] != 'followed_by'))) {
+                $unfollowed[] = $item;
             }
         }
-        echo '-b8-';
-        file_put_contents('cursor.txt', "-1");
+        return $unfollowed;
+    }
+
+    public function unfollowUser($user)
+    {
+        Twitter::postUnfollow(['user_id' => $user['id']]);
+    }
+
+    public function getUnfollowers($name, $cursor = 0)
+    {
+        try {
+            ini_set('max_execution_time', '5000');
+            $hasUser = true;
+            $unfollowed = [];
+            try {
+                if ($cursor) {
+                    $following = $this->getFollowing(['cursor' => $cursor, 'screen_name' => $name, 'count' => "100", 'format' => 'array']);
+                } else {
+                    $following = $this->getFollowing(['screen_name' => $name, 'count' => "100", 'format' => 'array']);
+                }
+                $screen_names = collect($following['users'])->pluck(['screen_name'])->implode(',');
+                $connections = $this->getUnfollwersList($screen_names);
+                $unfollowed_usernames = collect($connections)->pluck('screen_name')->toArray();
+                $unfollowed_users = collect($following['users'])->whereInStrict('screen_name', $unfollowed_usernames)->all();
+                array_merge($unfollowed, $unfollowed_users);
+                if (isset($following['next_cursor'])) {
+                    $cursor = $following['next_cursor_str'];
+                    $select = $cursor;
+                } else {
+                    $select = null;
+                    $hasUser = false;
+                }
+                return ['phase' => 1, 'count' => count($following['users']), 'name' => $name, 'cursor' => $select, 'list' => $unfollowed_users, 'hasUsers' => $hasUser];
+            } catch (\Exception $e) {
+                //echo '<hr />' . 'failed server:' . $e->getMessage() . '<br />';
+                $hasUser = false;
+                return ['phase' => 6, 'name' => $name, 'cursor' => -2, 'wait_time' => 180, 'list' => [], 'error' => 'failed server:' . $e->getMessage(), 'hasUsers' => false];
+            }
+        } catch (\Exception $e) {
+            return ['phase' => 8, 'name' => $name, 'cursor' => -2, 'list' => [], 'error' => 'failed server:' . $e->getMessage(), 'hasUsers' => false];
+            dd($e);
+        }
+    }
+
+    public static function getFollowers($arg)
+    {
+        try {
+            return Twitter::getFollowers($arg);
+        } catch (Exception $e) {
+            // dd(Twitter::error());
+            return dd(Twitter::logs());
+        }
+
+    }
+
+    public static function getFollowing($arg)
+    {
+        try {
+            return Twitter::getFriends($arg);
+        } catch (Exception $e) {
+            // dd(Twitter::error());
+            return dd(Twitter::logs());
+        }
 
     }
 
@@ -78,7 +99,7 @@ trait UnfollowerTrait
             try {
                 $user = \Session::get('user_object');
                 if ($cursor) {
-                    $followers = TweetController::getFollowing(['screen_name' => 'savyedinson', 'cursor' => $cursor, 'count' => 100, 'format' => 'array']);
+                    $followers = $this->getFollowing(['screen_name' => 'savyedinson', 'cursor' => $cursor, 'count' => 100, 'format' => 'array']);
                 } else {
                     $hasUser = false;
                     break;
@@ -96,7 +117,6 @@ trait UnfollowerTrait
                 break;
             }
         }
-        \Session_set('followers', $allFollowers);
     }
 
     public function followers()
@@ -110,7 +130,7 @@ trait UnfollowerTrait
             try {
                 $user = \Session::get('user_object');
                 if ($cursor) {
-                    $followers = TweetController::getFollowers(['screen_name' => 'savyedinson', 'cursor' => $cursor, 'count' => 100, 'format' => 'array']);
+                    $followers = $this->getFollowers(['screen_name' => 'savyedinson', 'cursor' => $cursor, 'count' => 100, 'format' => 'array']);
                 } else {
                     $hasUser = false;
                     break;
