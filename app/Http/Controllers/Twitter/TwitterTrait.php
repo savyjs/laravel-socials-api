@@ -72,7 +72,7 @@ trait TwitterTrait
         }
 
         $row = Token::where($user)->first();
-         // dd($row,$user);
+        // dd($row,$user);
 
         // dd($row->access_token);
         if (!$uid || !$row || $row->uid != $uid) {
@@ -87,10 +87,8 @@ trait TwitterTrait
 
         try {
             $request_token = collect(json_decode($row->access_token))->toArray();
-            // dd($request_token);
             Twitter::reconfig($request_token);
             $userInfo = Twitter::getCredentials();
-            //dd($userInfo);
             $userInfo->uid = $uid;
             $userInfo->user_id = $user_id;
             $userInfo->auth_row_id = $row->id;
@@ -99,7 +97,7 @@ trait TwitterTrait
             return true;
         } catch (\Exception $e) {
             // TODO: add error handler
-            $row->delete();
+            //$row->delete();
             if ($error) return response($e->getMessage());
             return false;
         }

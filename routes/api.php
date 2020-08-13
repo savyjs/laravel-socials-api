@@ -30,6 +30,9 @@ Route::middleware('auth:api')->namespace('Twitter')->group(function () {
     Route::any('/twitter/get-profile-or-auth-link', 'TwitterController@getTwitterProfileOrAuthLink');
     Route::any('/twitter/auto-refresh', 'TwitterController@twitterRefreshAllTokens');
     Route::any('/twitter/send-tweet', 'TwitterController@sendTweet');
+    Route::any('/twitter/unfollow-user', 'TwitterController@unfollowUser');
+    Route::any('/twitter/unfollow-mute-user', 'TwitterController@unfollowMuteUser');
+    Route::any('/twitter/block-user', 'TwitterController@unfollowBlockUser');
 });
 
 Route::middleware('auth:api')->namespace('Google')->group(function () {

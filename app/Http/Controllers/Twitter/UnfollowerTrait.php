@@ -25,9 +25,31 @@ trait UnfollowerTrait
         return $unfollowed;
     }
 
-    public function unfollowUser($user)
+    public function twitterUnfollowUser($userId)
     {
-        Twitter::postUnfollow(['user_id' => $user['id']]);
+        try {
+            return Twitter::postUnfollow(['user_id' => $userId]);
+        } catch (\Exception $e) {
+            return ['phase' => 12, 'userId' => $userId, 'wait_time' => 180, 'list' => [], 'error' => 'failed server:' . $e->getMessage()];
+        }
+    }
+
+    public function twitterMuteUser($userId)
+    {
+        try {
+            return Twitter::muteUser(['user_id' => $userId]);
+        } catch (\Exception $e) {
+            return ['phase' => 12, 'userId' => $userId, 'wait_time' => 180, 'list' => [], 'error' => 'failed server:' . $e->getMessage()];
+        }
+    }
+
+    public function twitterBlockUser($userId)
+    {
+        try {
+            return Twitter::postBlock(['user_id' => $userId]);
+        } catch (\Exception $e) {
+            return ['phase' => 11, 'userId' => $userId, 'wait_time' => 180, 'list' => [], 'error' => 'failed server:' . $e->getMessage()];
+        }
     }
 
     public function getUnfollowers($name, $cursor = 0)
@@ -37,13 +59,21 @@ trait UnfollowerTrait
             $hasUser = true;
             $unfollowed = [];
             try {
-                if ($cursor) {
-                    $following = $this->getFollowing(['cursor' => $cursor, 'screen_name' => $name, 'count' => "100", 'format' => 'array']);
-                } else {
-                    $following = $this->getFollowing(['screen_name' => $name, 'count' => "100", 'format' => 'array']);
-                }
+                $chacheName = 'followings_of_' . $cursor . '_' . $name;
+                //\Cache::forget($chacheName);
+                $following = \Cache::remember($chacheName, 48 * 60, function () use ($cursor, $name) {
+                    if ($cursor) {
+                        return $this->getFollowing(['cursor' => $cursor, 'screen_name' => $name, 'count' => "100", 'format' => 'array']);
+                    } else {
+                        return $this->getFollowing(['screen_name' => $name, 'count' => "100", 'format' => 'array']);
+                    }
+                });
                 $screen_names = collect($following['users'])->pluck(['screen_name'])->implode(',');
-                $connections = $this->getUnfollwersList($screen_names);
+                $followingChacheName = 'unfollowers_of_' . hash('sha256', $screen_names);
+                //\Cache::forget($followingChacheName);
+                $connections = \Cache::remember($followingChacheName, 60, function () use ($screen_names) {
+                    return $this->getUnfollwersList($screen_names);
+                });
                 $unfollowed_usernames = collect($connections)->pluck('screen_name')->toArray();
                 $unfollowed_users = collect($following['users'])->whereInStrict('screen_name', $unfollowed_usernames)->all();
                 array_merge($unfollowed, $unfollowed_users);
@@ -62,7 +92,7 @@ trait UnfollowerTrait
             }
         } catch (\Exception $e) {
             return ['phase' => 8, 'name' => $name, 'cursor' => -2, 'list' => [], 'error' => 'failed server:' . $e->getMessage(), 'hasUsers' => false];
-            dd($e);
+            //dd($e);
         }
     }
 

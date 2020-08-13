@@ -18,6 +18,8 @@ class TwitterController extends Controller
     use TwitterTrait;
     use UnfollowerTrait;
 
+    public $userInfo = null;
+
     /**
      * @param GoogleAuthRequest $request - [
      * uid
@@ -27,19 +29,76 @@ class TwitterController extends Controller
      * ]
      * @return \Illuminate\Http\JsonResponse
      */
+    public function unfollowUser(GoogleAuthRequest $request)
+    {
+        try {
+            $providerName = 'twitter';
+            $authId = auth()->user()->id;
+            $pid = $request->uid;
+            if ($this->checkTwitterAccess($pid, $authId, true)) {
+                $credentials = $this->userInfo;
+                if (is_object($credentials)) {
+                    $userId = $request->userId;
+                    $response = $this->twitterUnfollowUser($userId);
+                    return response()->json($response);
+                }
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function unfollowMuteUser(GoogleAuthRequest $request)
+    {
+        try {
+            $providerName = 'twitter';
+            $authId = auth()->user()->id;
+            $pid = $request->uid;
+            if ($this->checkTwitterAccess($pid, $authId, true)) {
+                $credentials = $this->userInfo;
+                if (is_object($credentials)) {
+                    $userId = $request->userId;
+                    $response[] = $this->twitterUnfollowUser($userId);
+                    $response[] = $this->twitterMuteUser($userId);
+                    return response()->json($response);
+                }
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()]);
+        }
+    }
+    public function unfollowBlockUser(GoogleAuthRequest $request)
+    {
+        try {
+            $providerName = 'twitter';
+            $authId = auth()->user()->id;
+            $pid = $request->uid;
+            if ($this->checkTwitterAccess($pid, $authId, true)) {
+                $credentials = $this->userInfo;
+                if (is_object($credentials)) {
+                    $userId = $request->userId;
+                    $response = $this->twitterBlockUser($userId);
+                    return response()->json($response);
+                }
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()]);
+        }
+    }
+
     public function getTwitterUnfollowers(GoogleAuthRequest $request)
     {
         try {
             $providerName = 'twitter';
-            $user_id = auth()->user()->id;
-            $uid = $request->uid;
+            $authId = auth()->user()->id;
+            $pid = $request->uid;
             $cursor = 0;
             if (isset($request->cursor)) $cursor = $request->cursor ?? 0;
-            if ($this->checkTwitterAccess($uid, $user_id, true)) {
-                $credentials = Twitter::getCredentials();
+            if ($this->checkTwitterAccess($pid, $authId, true)) {
+                $credentials = $this->userInfo;
                 if (is_object($credentials)) {
-                    $users = $this->getUnfollowedUsers($uid, $user_id, $cursor);
-                    if (!count($users)) dd($users, $uid, $user_id, $cursor);
+                    $users = $this->getUnfollowedUsers($pid, $authId, $cursor);
+                    if (!count($users)) dd($users, $pid, $authId, $cursor);
                     return response()->json($users);
                 } else {
                     return response()->json([
@@ -58,10 +117,10 @@ class TwitterController extends Controller
         }
     }
 
-    function getUnfollowedUsers($uid, $user_id, $cursor = 0)
+    function getUnfollowedUsers($pid, $authId, $cursor = 0)
     {
-        if ($this->checkTwitterAccess($uid, $user_id, true)) {
-            $name = (Twitter::getCredentials())->screen_name;
+        if ($this->checkTwitterAccess($pid, $authId, true)) {
+            $name = ($this->userInfo)->screen_name;
             return $this->getUnfollowers($name, $cursor);
         } else {
             return ['error' => 'access denied!'];
@@ -72,13 +131,13 @@ class TwitterController extends Controller
     function getTwitterProfileOrAuthLink(GoogleAuthRequest $request)
     {
         $providerName = 'twitter';
-        $user_id = auth()->user()->id;
-        $uid = $request->uid;
+        $authId = auth()->user()->id;
+        $pid = $request->uid;
 
-        if ($this->checkTwitterAccess($uid, $user_id, false)) {
+        if ($this->checkTwitterAccess($pid, $authId, false)) {
 
             try {
-                if ($this->row->user_id == $user_id) {
+                if ($this->row->user_id == $authId) {
                     return response()->json([
                         'status' => true,
                         'type' => 'profile',
@@ -100,7 +159,7 @@ class TwitterController extends Controller
                 ]);
             }
         } else {
-            $link = $this->twitterAuthLink($uid, $user_id);
+            $link = $this->twitterAuthLink($pid, $authId);
             return response()->json([
                 'status' => true,
                 'type' => 'link',
@@ -160,12 +219,12 @@ class TwitterController extends Controller
     {
         $providerName = 'twitter';
         $secret = session()->get('secret');
-        $uid = session()->get('uid');
-        $user_id = session()->get('user_id');
-        if (!$uid || !$user_id) {
+        $pid = session()->get('uid');
+        $authId = session()->get('user_id');
+        if (!$pid || !$authId) {
             return $this->error('مدت زمان بازگشت خیلی طولانی شد. لطفا مجددا وارد شوید.');
         }
-        if (!$uid) {
+        if (!$pid) {
             return $this->error('ورود منقضی شده است. لطفا پنجره را ببندید دوباره باز کنید.');
         }
         $providers = Token::$PROVIDERS;
@@ -175,8 +234,8 @@ class TwitterController extends Controller
         // check if uid+provide exists in db - if not create it first
         $user = [
             'secret' => $secret,
-            'uid' => $uid,
-            'user_id' => $user_id,
+            'uid' => $pid,
+            'user_id' => $authId,
             'provider' => $providerName,
         ];
         //dd($user);
@@ -232,11 +291,11 @@ class TwitterController extends Controller
     {
         try {
             $providerName = 'twitter';
-            $user_id = auth()->user()->id;
-            $uid = $request->uid;
+            $authId = auth()->user()->id;
+            $pid = $request->uid;
 
-            if ($this->checkTwitterAccess($uid, $user_id, true)) {
-                $credentials = Twitter::getCredentials();
+            if ($this->checkTwitterAccess($pid, $authId, true)) {
+                $credentials = $this->userInfo;
                 if (is_object($credentials)) {
                     $attachment = isset($request->attachment) ? $request->attachment : null;
                     $text = $request->text;
