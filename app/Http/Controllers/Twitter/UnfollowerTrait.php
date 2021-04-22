@@ -96,10 +96,85 @@ trait UnfollowerTrait
         }
     }
 
+
+    public function followings($name, $cursor = 0)
+    {
+        try {
+            ini_set('max_execution_time', '5000');
+            $hasUser = true;
+            try {
+                $chacheName = 'followings_of_' . $cursor . '_' . $name;
+                $following = \Cache::remember($chacheName, 15, function () use ($cursor, $name) {
+                    if ($cursor) {
+                        return $this->getFollowing(['cursor' => $cursor, 'screen_name' => $name, 'count' => "100", 'format' => 'array']);
+                    } else {
+                        return $this->getFollowing(['screen_name' => $name, 'count' => "100", 'format' => 'array']);
+                    }
+                });
+                $users = collect($following['users']);
+                if (isset($following['next_cursor'])) {
+                    $cursor = $following['next_cursor_str'];
+                    $select = $cursor;
+                } else {
+                    $select = null;
+                    $hasUser = false;
+                }
+                return ['phase' => 1, 'count' => count($users), 'name' => $name, 'cursor' => $select, 'list' => $users, 'hasUsers' => $hasUser];
+            } catch (\Exception $e) {
+                return ['phase' => 6, 'name' => $name, 'cursor' => -2, 'wait_time' => 180, 'list' => [], 'error' => 'failed server:' . $e->getMessage(), 'hasUsers' => false];
+            }
+        } catch (\Exception $e) {
+            return ['phase' => 8, 'name' => $name, 'cursor' => -2, 'list' => [], 'error' => 'failed server:' . $e->getMessage(), 'hasUsers' => false];
+        }
+    }
+
+    public function followers($name, $cursor = 0)
+    {
+        try {
+            ini_set('max_execution_time', '5000');
+            $hasUser = true;
+            try {
+                $chacheName = 'followers_of_' . $cursor . '_' . $name;
+                $following = \Cache::remember($chacheName, 15, function () use ($cursor, $name) {
+                    if ($cursor) {
+                        return $this->getFollowers(['cursor' => $cursor, 'screen_name' => $name, 'count' => "100", 'format' => 'array']);
+                    } else {
+                        return $this->getFollowers(['screen_name' => $name, 'count' => "100", 'format' => 'array']);
+                    }
+                });
+                $users = collect($following['users']);
+                if (isset($following['next_cursor'])) {
+                    $cursor = $following['next_cursor_str'];
+                    $select = $cursor;
+                } else {
+                    $select = null;
+                    $hasUser = false;
+                }
+                return ['phase' => 1, 'count' => count($users), 'name' => $name, 'cursor' => $select, 'list' => $users, 'hasUsers' => $hasUser];
+            } catch (\Exception $e) {
+                return ['phase' => 6, 'name' => $name, 'cursor' => -2, 'wait_time' => 180, 'list' => [], 'error' => 'failed server:' . $e->getMessage(), 'hasUsers' => false];
+            }
+        } catch (\Exception $e) {
+            return ['phase' => 8, 'name' => $name, 'cursor' => -2, 'list' => [], 'error' => 'failed server:' . $e->getMessage(), 'hasUsers' => false];
+        }
+    }
+
+
     public static function getFollowers($arg)
     {
         try {
             return Twitter::getFollowers($arg);
+        } catch (Exception $e) {
+            // dd(Twitter::error());
+            return dd(Twitter::logs());
+        }
+
+    }
+
+    public static function getUserById($arg)
+    {
+        try {
+            return Twitter::getUsers($arg);
         } catch (Exception $e) {
             // dd(Twitter::error());
             return dd(Twitter::logs());
@@ -116,68 +191,5 @@ trait UnfollowerTrait
             return dd(Twitter::logs());
         }
 
-    }
-
-    public function followings()
-    {
-        $hasUser = true;
-        $cursor = "-1";
-        $allFollowers = [];
-        while ($hasUser) {
-            sleep(rand(1, 2));
-            echo $cursor . "<br />";
-            try {
-                $user = \Session::get('user_object');
-                if ($cursor) {
-                    $followers = $this->getFollowing(['screen_name' => 'savyedinson', 'cursor' => $cursor, 'count' => 100, 'format' => 'array']);
-                } else {
-                    $hasUser = false;
-                    break;
-                }
-                if (count($followers['users']) && $followers['next_cursor']) {
-                    $cursor = $followers['next_cursor_str'];
-                    array_push($allFollowers, $followers['users']);
-                } else {
-                    $hasUser = false;
-                    break;
-                }
-            } catch (\Exception $e) {
-                print_r($e);
-                $hasUser = false;
-                break;
-            }
-        }
-    }
-
-    public function followers()
-    {
-        $hasUser = true;
-        $cursor = "-1";
-        $allFollowers = [];
-        while ($hasUser) {
-            sleep(rand(1, 2));
-            echo $cursor . "<br />";
-            try {
-                $user = \Session::get('user_object');
-                if ($cursor) {
-                    $followers = $this->getFollowers(['screen_name' => 'savyedinson', 'cursor' => $cursor, 'count' => 100, 'format' => 'array']);
-                } else {
-                    $hasUser = false;
-                    break;
-                }
-                if (count($followers['users']) && $followers['next_cursor']) {
-                    $cursor = $followers['next_cursor_str'];
-                    array_push($allFollowers, $followers['users']);
-                } else {
-                    $hasUser = false;
-                    break;
-                }
-            } catch (\Exception $e) {
-                print_r($e);
-                $hasUser = false;
-                break;
-            }
-        }
-        \Session_set('followers', $allFollowers);
     }
 }

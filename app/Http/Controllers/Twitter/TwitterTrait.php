@@ -103,6 +103,24 @@ trait TwitterTrait
         }
     }
 
+    public function favTweetByID($tweetId)
+    {
+        try {
+            return Twitter::postFavorite(['id' => $tweetId]);
+        } catch (\Exception $e) {
+            return ['phase' => 'favTweetByID', 'id' => $tweetId, 'error' => 'failed server:' . $e->getMessage()];
+        }
+    }
+
+    public function getUserLastTweetByID($userId)
+    {
+        try {
+            return Twitter::getUserTimeline(['user_id' => $userId,'count' => 100]);
+        } catch (\Exception $e) {
+            return ['phase' => 'getUserLastTweetByID', 'userId' => $userId, 'error' => 'failed server:' . $e->getMessage()];
+        }
+    }
+
 
     public function error($msg, $status = 400)
     {

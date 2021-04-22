@@ -7,6 +7,7 @@ ini_set('memory_limit', '3G');
 use App\Http\Controllers\Controller;
 use App\Http\Requests\GoogleAuthRequest;
 use App\Token;
+use Composer\Cache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Redirect;
@@ -19,6 +20,53 @@ class TwitterController extends Controller
     use UnfollowerTrait;
 
     public $userInfo = null;
+
+    /**
+     * @param GoogleAuthRequest $request - [
+     * uid
+     * attachment
+     * text
+     *
+     * ]
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function favTweet(GoogleAuthRequest $request)
+    {
+        try {
+            $providerName = 'twitter';
+            $authId = auth()->user()->id;
+            $pid = $request->uid;
+            if ($this->checkTwitterAccess($pid, $authId, true)) {
+                $credentials = $this->userInfo;
+                if (is_object($credentials)) {
+                    $id = $request->id;
+                    $response = $this->favTweetByID($id);
+                    return response()->json($response);
+                }
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function getUserLastTweet(GoogleAuthRequest $request)
+    {
+        try {
+            $providerName = 'twitter';
+            $authId = auth()->user()->id;
+            $pid = $request->uid;
+            if ($this->checkTwitterAccess($pid, $authId, true)) {
+                $credentials = $this->userInfo;
+                if (is_object($credentials)) {
+                    $userId = $request->userId;
+                    $response = $this->getUserLastTweetByID($userId);
+                    return response()->json($response);
+                }
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()]);
+        }
+    }
 
     /**
      * @param GoogleAuthRequest $request - [
@@ -67,6 +115,7 @@ class TwitterController extends Controller
             return response()->json(['error' => $e->getMessage()]);
         }
     }
+
     public function unfollowBlockUser(GoogleAuthRequest $request)
     {
         try {
@@ -127,6 +176,88 @@ class TwitterController extends Controller
         }
     }
 
+    public function getTwitterFollowers(GoogleAuthRequest $request)
+    {
+        try {
+            $providerName = 'twitter';
+            $authId = auth()->user()->id;
+            $pid = $request->uid;
+            $cursor = 0;
+            if (isset($request->cursor)) $cursor = $request->cursor ?? 0;
+            if ($this->checkTwitterAccess($pid, $authId, true)) {
+                $credentials = $this->userInfo;
+                if (is_object($credentials)) {
+                    $users = $this->getFollowerUsers($pid, $authId, $cursor);
+                    if (!count($users)) dd($users, $pid, $authId, $cursor);
+                    return response()->json($users);
+                } else {
+                    return response()->json([
+                        'status' => 401,
+                        'text' => 'Login to twitter first'
+                    ]);
+                }
+            } else {
+                return response()->json([
+                    'status' => 401,
+                    'text' => 'Login to twitter first!'
+                ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error2' => $e->getMessage()]);
+        }
+    }
+
+    function getFollowerUsers($pid, $authId, $cursor = 0)
+    {
+        if ($this->checkTwitterAccess($pid, $authId, true)) {
+            $name = ($this->userInfo)->screen_name;
+            return $this->followers($name, $cursor);
+        } else {
+            return ['error' => 'access denied!'];
+        }
+    }
+
+    public function getTwitterFollowings(GoogleAuthRequest $request)
+    {
+        try {
+            $providerName = 'twitter';
+            $authId = auth()->user()->id;
+            $pid = $request->uid;
+            $cursor = 0;
+            if (isset($request->cursor)) $cursor = $request->cursor ?? 0;
+            if ($this->checkTwitterAccess($pid, $authId, true)) {
+                $credentials = $this->userInfo;
+                if (is_object($credentials)) {
+                    $users = $this->getFollowingUsers($pid, $authId, $cursor);
+                    if (!count($users)) dd($users, $pid, $authId, $cursor);
+                    return response()->json($users);
+                } else {
+                    return response()->json([
+                        'status' => 401,
+                        'text' => 'Login to twitter first'
+                    ]);
+                }
+            } else {
+                return response()->json([
+                    'status' => 401,
+                    'text' => 'Login to twitter first!'
+                ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error2' => $e->getMessage()]);
+        }
+    }
+
+    function getFollowingUsers($pid, $authId, $cursor = 0)
+    {
+        if ($this->checkTwitterAccess($pid, $authId, true)) {
+            $name = ($this->userInfo)->screen_name;
+            return $this->followings($name, $cursor);
+        } else {
+            return ['error' => 'access denied!'];
+        }
+    }
+
     //
     function getTwitterProfileOrAuthLink(GoogleAuthRequest $request)
     {
@@ -164,6 +295,49 @@ class TwitterController extends Controller
                 'status' => true,
                 'type' => 'link',
                 'data' => $link,
+            ]);
+        }
+    }
+
+    function getTwitterProfileById(GoogleAuthRequest $request)
+    {
+        $providerName = 'twitter';
+        $authId = auth()->user()->id;
+        $pid = $request->uid;
+        $userId = $request->id;
+
+        if ($this->checkTwitterAccess($pid, $authId, false)) {
+
+            try {
+                if ($this->row->user_id == $authId) {
+                    $userInfo = \Cache::remember($userId, 60, function () use ($userId) {
+                        return $this->getUserById(['user_id' => $userId]);
+                    });
+                    return response()->json([
+                        'status' => true,
+                        'type' => 'profile',
+                        'data' => $userInfo,
+                    ]);
+                } else {
+                    return response()->json([
+                        'status' => false,
+                        'type' => 'error',
+                        'data' => 'wrong_user_id',
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // TODO: show Error
+                return response()->json([
+                    'status' => false,
+                    'type' => 'error',
+                    'data' => $e->getMessage(),
+                ]);
+            }
+        } else {
+            return response()->json([
+                'status' => false,
+                'type' => 'auth error',
+                'data' => 'login first',
             ]);
         }
     }

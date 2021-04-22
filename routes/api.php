@@ -26,13 +26,18 @@ Route::middleware('auth:api')->namespace('Twitter')->group(function () {
     Route::any('/twitter/check-token/{uid}', 'TwitterController@checkTwitterAccess');
     Route::any('/twitter/get-token', 'TwitterController@getTwitterAccessToken');
     Route::any('/twitter/get-profile', 'TwitterController@getTwitterProfile');
+    Route::any('/twitter/get-profile-by-id', 'TwitterController@getTwitterProfileById');
     Route::any('/twitter/get-unfollowers', 'TwitterController@getTwitterUnfollowers');
+    Route::any('/twitter/get-followers', 'TwitterController@getTwitterFollowers');
+    Route::any('/twitter/get-followings', 'TwitterController@getTwitterFollowings');
     Route::any('/twitter/get-profile-or-auth-link', 'TwitterController@getTwitterProfileOrAuthLink');
     Route::any('/twitter/auto-refresh', 'TwitterController@twitterRefreshAllTokens');
     Route::any('/twitter/send-tweet', 'TwitterController@sendTweet');
     Route::any('/twitter/unfollow-user', 'TwitterController@unfollowUser');
     Route::any('/twitter/unfollow-mute-user', 'TwitterController@unfollowMuteUser');
     Route::any('/twitter/block-user', 'TwitterController@unfollowBlockUser');
+    Route::any('/twitter/last-user-tweets', 'TwitterController@getUserLastTweet');
+    Route::any('/twitter/fav-tweet', 'TwitterController@favTweet');
 });
 
 Route::middleware('auth:api')->namespace('Google')->group(function () {
