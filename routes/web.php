@@ -17,6 +17,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/clear-tokens', 'General@clearDB');
 
 // auth for google
 Route::get('/google/auth-classic/{provider}', 'Google\AuthController@googleAuthClassic');
